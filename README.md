@@ -16,7 +16,7 @@ $ web_bench --help
 ## Example output
 
 ```sh
-$ ./web_bench --duration 1 --threads 1 2 4 6 8 10 12 14 16 --host http://localhost
+$ ./web_bench stress --duration 1 --threads 1 2 4 6 8 10 12 14 16 --hostname http://localhost
 1143 requests made in 1.000398941s on 1 thread(s). Requests per second: 1142.54
 2008 requests made in 1.000452232s on 2 thread(s). Requests per second: 2007.09
 2806 requests made in 1.002224107s on 4 thread(s). Requests per second: 2799.77
