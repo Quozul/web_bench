@@ -17,6 +17,11 @@ enum Commands {
         /// The duration of the benchmark in seconds
         #[arg(name = "duration", short, long, default_value = "10")]
         duration: f64,
+
+        /// The size of the body in MiB
+        /// If the value is 0 or not provided, no request body will be sent and GET requests will be made
+        #[arg(name = "body", short, long, default_value = "0")]
+        body_size: usize,
     },
 }
 
@@ -37,7 +42,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             hostname,
             threads,
             duration,
-        }) => commands::bench::stress(hostname, threads, duration).await?,
+            body_size,
+        }) => commands::bench::stress(hostname, threads, duration, body_size).await?,
     }
 
     Ok(())
