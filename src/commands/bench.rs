@@ -1,16 +1,26 @@
 use rand::distributions::Alphanumeric;
 use rand::Rng;
 use reqwest::header::HeaderMap;
+use reqwest::Client;
 use std::time::Duration;
 
-async fn send_get_requests(client: &reqwest::Client, duration: Duration, hostname: &str) -> u32 {
+async fn send_get_requests(client: &Client, duration: Duration, hostname: &str) -> u32 {
     let start = std::time::Instant::now();
     let mut requests = 0;
+    let mut error_printed = false;
 
     while start.elapsed() < duration {
         let request = client.get(hostname).send().await;
-        if request.is_ok() {
-            requests += 1;
+        match request {
+            Ok(_) => {
+                requests += 1;
+            }
+            Err(err) => {
+                if !error_printed {
+                    // println!("{}", err);
+                    error_printed = true;
+                }
+            }
         }
     }
 
@@ -18,7 +28,7 @@ async fn send_get_requests(client: &reqwest::Client, duration: Duration, hostnam
 }
 
 async fn send_post_requests(
-    client: &reqwest::Client,
+    client: &Client,
     duration: Duration,
     hostname: &str,
     body: String,
@@ -41,7 +51,7 @@ async fn bench(hostname: String, duration: Duration, body: String) -> u32 {
     let mut default_headers = HeaderMap::new();
     default_headers.insert("Connection", "keep-alive".parse().unwrap());
 
-    let client = reqwest::Client::builder()
+    let client = Client::builder()
         .danger_accept_invalid_certs(true)
         .http1_only()
         .default_headers(default_headers)
@@ -70,7 +80,7 @@ pub(crate) async fn stress(
 
     let mut response_times = Vec::new();
 
-    let data_size = 1024 * 1024 * body_size;
+    let data_size = 1024 * body_size;
     let body: String = rand::thread_rng()
         .sample_iter(&Alphanumeric)
         .take(data_size)
@@ -96,4 +106,28 @@ pub(crate) async fn stress(
     }
 
     Ok(())
+}
+
+async fn connection(hostname: String) {
+    let mut default_headers = HeaderMap::new();
+    default_headers.insert("Connection", "keep-alive".parse().unwrap());
+
+    let client = Client::builder()
+        .danger_accept_invalid_certs(true)
+        .http1_only()
+        .default_headers(default_headers)
+        .timeout(Duration::from_secs(1))
+        .build()
+        .unwrap();
+
+    let _ = client.get(hostname).send().await;
+}
+
+pub(crate) async fn connections(hostname: String, connections: u32) {
+    let start = std::time::Instant::now();
+    let tasks = (0..connections).map(|_| tokio::spawn(connection(hostname.clone())));
+
+    let _ = futures::future::join_all(tasks).await;
+    let elapsed = start.elapsed();
+    println!("{} connections made in {:?}.", connections, elapsed);
 }

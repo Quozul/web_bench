@@ -4,7 +4,8 @@ use clap::{Parser, Subcommand};
 
 #[derive(Subcommand)]
 enum Commands {
-    Stress {
+    /// Makes a lot of requests
+    Requests {
         /// The hostname to benchmark
         #[arg(name = "hostname", long)]
         hostname: String,
@@ -18,10 +19,20 @@ enum Commands {
         #[arg(name = "duration", short, long, default_value = "10")]
         duration: f64,
 
-        /// The size of the body in MiB
+        /// The size of the body in KiB
         /// If the value is 0 or not provided, no request body will be sent and GET requests will be made
         #[arg(name = "body", short, long, default_value = "0")]
         body_size: usize,
+    },
+
+    /// Opens a lot of long-lasting connections
+    Connections {
+        /// The hostname to benchmark
+        #[arg(name = "hostname", long)]
+        hostname: String,
+
+        #[arg(name = "connection_count", short, long)]
+        connection_count: u32,
     },
 }
 
@@ -38,12 +49,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     match cli.command {
         None => {}
-        Some(Commands::Stress {
+        Some(Commands::Requests {
             hostname,
             threads,
             duration,
             body_size,
         }) => commands::bench::stress(hostname, threads, duration, body_size).await?,
+        Some(Commands::Connections {
+            hostname,
+            connection_count,
+        }) => commands::bench::connections(hostname, connection_count).await,
     }
 
     Ok(())
